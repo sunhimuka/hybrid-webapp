@@ -14,7 +14,6 @@ export default function About() {
       <h1>About Page</h1>
       <p>これは Next.js で作成した About ページです 🚀</p>
 
-      {/* トップページへのリンク */}
       <p>
         <Link href="/">🏠 ホームに戻る</Link>
       </p>
