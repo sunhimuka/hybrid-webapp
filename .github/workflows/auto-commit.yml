@@ -16,19 +16,47 @@ jobs:
           persist-credentials: true
           fetch-depth: 0
 
-      - name: Make changes
-        run: |
-          mkdir -p pages
-          cat << 'EOF' > pages/contact.js
-          export default function Contact() {
-            return (
-              <div style={{ padding: '2rem' }}>
-                <h1>Contact Page 📞</h1>
-                <p>This is a test page generated automatically!</p>
-              </div>
-            );
-          }
-          EOF
+     - name: Make changes
+  run: |
+    mkdir -p pages
+
+    # contact.js
+    cat << 'EOF' > pages/contact.js
+    export default function Contact() {
+      return (
+        <div style={{ padding: '2rem' }}>
+          <h1>Contact Page 📞</h1>
+          <p>This is a test page generated automatically!</p>
+        </div>
+      );
+    }
+    EOF
+
+    # about.js
+    cat << 'EOF' > pages/about.js
+    export default function About() {
+      return (
+        <div style={{ padding: '2rem' }}>
+          <h1>About Page ℹ️</h1>
+          <p>This is another page generated automatically!</p>
+        </div>
+      );
+    }
+    EOF
+
+
+    # about.js
+    cat << 'EOF' > pages/about.js
+    export default function About() {
+      return (
+        <div style={{ padding: '2rem' }}>
+          <h1>About Page ℹ️</h1>
+          <p>This is another page generated automatically!</p>
+        </div>
+      );
+    }
+    EOF
+
 
       - name: Commit changes
         run: |
