@@ -10,7 +10,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true   # ← これを追加！
+          fetch-depth: 0
 
       - name: Make changes
         run: |
@@ -19,7 +20,7 @@ jobs:
           export default function Contact() {
             return (
               <div style={{ padding: '2rem' }}>
-                <h1>Contact Page</h1>
+                <h1>Contact Page 📞</h1>
                 <p>This is a test page generated automatically!</p>
               </div>
             );
