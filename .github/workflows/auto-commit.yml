@@ -3,9 +3,6 @@ name: Auto Commit from Chat
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write   # ← これを追加
-
 jobs:
   commit:
     runs-on: ubuntu-latest
@@ -16,47 +13,65 @@ jobs:
           persist-credentials: true
           fetch-depth: 0
 
-     - name: Make changes
-  run: |
-    mkdir -p pages
+      - name: Make changes
+        run: |
+          mkdir -p pages
 
-    # contact.js
-    cat << 'EOF' > pages/contact.js
-    export default function Contact() {
-      return (
-        <div style={{ padding: '2rem' }}>
-          <h1>Contact Page 📞</h1>
-          <p>This is a test page generated automatically!</p>
-        </div>
-      );
-    }
-    EOF
+          # contact.js
+          cat << 'EOF' > pages/contact.js
+          import Layout from "../components/Layout";
 
-    # about.js
-    cat << 'EOF' > pages/about.js
-    export default function About() {
-      return (
-        <div style={{ padding: '2rem' }}>
-          <h1>About Page ℹ️</h1>
-          <p>This is another page generated automatically!</p>
-        </div>
-      );
-    }
-    EOF
+          export default function Contact() {
+            return (
+              <Layout>
+                <h1>Contact Page 📞</h1>
+                <p>This is a test page generated automatically!</p>
+              </Layout>
+            );
+          }
+          EOF
 
+          # about.js
+          cat << 'EOF' > pages/about.js
+          import Layout from "../components/Layout";
 
-    # about.js
-    cat << 'EOF' > pages/about.js
-    export default function About() {
-      return (
-        <div style={{ padding: '2rem' }}>
-          <h1>About Page ℹ️</h1>
-          <p>This is another page generated automatically!</p>
-        </div>
-      );
-    }
-    EOF
+          export default function About() {
+            return (
+              <Layout>
+                <h1>About Page 📘</h1>
+                <p>This is another page generated automatically!</p>
+              </Layout>
+            );
+          }
+          EOF
 
+          # profile.js
+          cat << 'EOF' > pages/profile.js
+          import Layout from "../components/Layout";
+
+          export default function Profile() {
+            return (
+              <Layout>
+                <h1>Profile Page 👤</h1>
+                <p>This is the profile page generated automatically!</p>
+              </Layout>
+            );
+          }
+          EOF
+
+          # faq.js
+          cat << 'EOF' > pages/faq.js
+          import Layout from "../components/Layout";
+
+          export default function FAQ() {
+            return (
+              <Layout>
+                <h1>FAQ Page ❓</h1>
+                <p>Here are some frequently asked questions, generated automatically!</p>
+              </Layout>
+            );
+          }
+          EOF
 
       - name: Commit changes
         run: |
@@ -66,6 +81,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Auto Commit from Chat: Add contact.js"
+            git commit -m "Auto Commit from Chat: Update pages"
             git push
           fi
