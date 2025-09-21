@@ -3,9 +3,6 @@ name: Auto Commit from Chat
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write   # ← これを必ず追加！
-
 jobs:
   commit:
     runs-on: ubuntu-latest
@@ -16,14 +13,13 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make changes
-  run: |
-    echo "export default function Contact() { return (<div style={{ padding: '2rem' }}><h1>Contact Page 📩</h1><p>This is a test page generated automatically!</p></div>); }" > pages/contact.js
-
+        run: |
+          echo "export default function Contact() { return (<div style={{ padding: '2rem' }}><h1>Contact Page 📩</h1><p>This is a test page generated automatically!</p></div>); }" > pages/contact.js
 
       - name: Commit changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Auto Commit from Chat"
+          git commit -m "Auto Commit from Chat: Add contact.js"
           git push
