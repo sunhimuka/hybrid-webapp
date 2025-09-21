@@ -6,6 +6,7 @@ on:
 jobs:
   commit:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -17,37 +18,13 @@ jobs:
         run: |
           mkdir -p pages
 
-          # contact.js
-          cat << 'EOF' > pages/contact.js
-          export default function Contact() {
-            return (
-              <div style={{ padding: '2rem' }}>
-                <h1>Contact Page 📞</h1>
-                <p>This is a test page generated automatically!</p>
-              </div>
-            );
-          }
-          EOF
-
-          # about.js
-          cat << 'EOF' > pages/about.js
-          export default function About() {
-            return (
-              <div style={{ padding: '2rem' }}>
-                <h1>About Page 🚀</h1>
-                <p>これは Next.js で作成した About ページです 🚀</p>
-              </div>
-            );
-          }
-          EOF
-
           # faq.js
           cat << 'EOF' > pages/faq.js
           export default function FAQ() {
             return (
               <div style={{ padding: '2rem' }}>
                 <h1>FAQ Page ❓</h1>
-                <p>This is an FAQ page generated automatically!</p>
+                <p>This is an auto-generated FAQ page.</p>
               </div>
             );
           }
@@ -59,7 +36,7 @@ jobs:
             return (
               <div style={{ padding: '2rem' }}>
                 <h1>Profile Page 👤</h1>
-                <p>This is a Profile page generated automatically!</p>
+                <p>This is an auto-generated Profile page.</p>
               </div>
             );
           }
@@ -67,8 +44,8 @@ jobs:
 
       - name: Commit changes
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add pages/
-          git commit -m "Auto Commit from Chat: Add about.js, contact.js, faq.js, profile.js" || echo "No changes to commit"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add pages/faq.js pages/profile.js || echo "No changes to add"
+          git commit -m "Auto Commit from Chat: Add faq.js and profile.js" || echo "No changes to commit"
           git push
