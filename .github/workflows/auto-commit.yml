@@ -34,45 +34,41 @@ jobs:
           export default function About() {
             return (
               <div style={{ padding: '2rem' }}>
-                <h1>About Page 📄</h1>
-                <p>This is another page generated automatically!</p>
+                <h1>About Page 🚀</h1>
+                <p>これは Next.js で作成した About ページです 🚀</p>
               </div>
             );
           }
           EOF
 
           # faq.js
-    cat << 'EOF' > pages/faq.js
-    export default function FAQ() {
-      return (
-        <div style={{ padding: '2rem' }}>
-          <h1>FAQ Page ❓</h1>
-          <p>This is an FAQ page generated automatically!</p>
-        </div>
-      );
-    }
-    EOF
+          cat << 'EOF' > pages/faq.js
+          export default function FAQ() {
+            return (
+              <div style={{ padding: '2rem' }}>
+                <h1>FAQ Page ❓</h1>
+                <p>This is an FAQ page generated automatically!</p>
+              </div>
+            );
+          }
+          EOF
 
-    # profile.js
-    cat << 'EOF' > pages/profile.js
-    export default function Profile() {
-      return (
-        <div style={{ padding: '2rem' }}>
-          <h1>Profile Page 👤</h1>
-          <p>This is a Profile page generated automatically!</p>
-        </div>
-      );
-    }
-    EOF
+          # profile.js
+          cat << 'EOF' > pages/profile.js
+          export default function Profile() {
+            return (
+              <div style={{ padding: '2rem' }}>
+                <h1>Profile Page 👤</h1>
+                <p>This is a Profile page generated automatically!</p>
+              </div>
+            );
+          }
+          EOF
 
       - name: Commit changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Auto Commit from Chat: Add/Update pages"
-            git push
-          fi
+          git add pages/
+          git commit -m "Auto Commit from Chat: Add about.js, contact.js, faq.js, profile.js" || echo "No changes to commit"
+          git push
