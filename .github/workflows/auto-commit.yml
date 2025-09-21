@@ -1,0 +1,22 @@
+name: Auto Commit from Chat
+
+on:
+  workflow_dispatch:   # 手動でも実行できる
+  push:
+    paths:
+      - "generated/**"  # このチャットが出すコードを置く場所
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Commit generated code
+        run: |
+          git config user.name "chat-bot"
+          git config user.email "chat@example.com"
+          git add .
+          git commit -m "Auto-commit from chat" || echo "No changes"
+          git push
