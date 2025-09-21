@@ -14,7 +14,16 @@ jobs:
 
       - name: Make changes
         run: |
-          echo "export default function Contact() { return (<div style={{ padding: '2rem' }}><h1>Contact Page 📩</h1><p>This is a test page generated automatically!</p></div>); }" > pages/contact.js
+          cat << 'EOF' > pages/contact.js
+          export default function Contact() {
+            return (
+              <div style={{ padding: '2rem' }}>
+                <h1>Contact Page 📩</h1>
+                <p>This is a test page generated automatically!</p>
+              </div>
+            );
+          }
+          EOF
 
       - name: Commit changes
         run: |
