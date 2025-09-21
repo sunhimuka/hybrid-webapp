@@ -1,16 +1,23 @@
+import Link from 'next/link';
+
 export default function About() {
   return (
     <div style={{
       fontFamily: "sans-serif",
       display: "flex",
+      flexDirection: "column",
       justifyContent: "center",
       alignItems: "center",
       height: "100vh",
-      flexDirection: "column",
-      background: "#f0f8ff"
+      background: "#e0f7fa"
     }}>
       <h1>About Page</h1>
       <p>これは Next.js で作成した About ページです 🚀</p>
+
+      {/* トップページへのリンク */}
+      <p>
+        <Link href="/">🏠 ホームに戻る</Link>
+      </p>
     </div>
   );
 }
