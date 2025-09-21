@@ -3,9 +3,6 @@ name: Auto Commit from Chat
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   commit:
     runs-on: ubuntu-latest
@@ -16,62 +13,45 @@ jobs:
           persist-credentials: true
           fetch-depth: 0
 
-      - name: Make changes
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
         run: |
-          mkdir -p pages
+          npm install openai
 
-          # contact.js
-          cat <<'EOF' > pages/contact.js
-          export default function Contact() {
-            return (
-              <div style={{ padding: '2rem' }}>
-                <h1>Contact Page 📞</h1>
-                <p>This is a test page generated automatically!</p>
-              </div>
-            );
-          }
-          EOF
-
-          # about.js
-          cat <<'EOF' > pages/about.js
-          export default function About() {
-            return (
-              <div style={{ padding: '2rem' }}>
-                <h1>About Page 🚀</h1>
-                <p>This is another page generated automatically!</p>
-              </div>
-            );
-          }
-          EOF
-
-          # faq.js
-          cat <<'EOF' > pages/faq.js
-          export default function FAQ() {
-            return (
-              <div style={{ padding: '2rem' }}>
-                <h1>FAQ Page ❓</h1>
-                <p>Frequently Asked Questions will appear here.</p>
-              </div>
-            );
-          }
-          EOF
-
-          # profile.js
-          cat <<'EOF' > pages/profile.js
-          export default function Profile() {
-            return (
-              <div style={{ padding: '2rem' }}>
-                <h1>Profile Page 👤</h1>
-                <p>This is a simple profile page generated automatically!</p>
-              </div>
-            );
-          }
-          EOF
-
-      - name: Commit changes
+      - name: Generate new page with ChatGPT
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "github-actions[bot]"
-          git add pages/
-          git commit -m "Auto Commit from Chat: Add faq.js and profile.js" || echo "No changes to commit"
+          node -e "
+          import fs from 'fs';
+          import OpenAI from 'openai';
+
+          const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+          async function generatePage() {
+            const response = await client.chat.completions.create({
+              model: 'gpt-4o-mini',
+              messages: [
+                { role: 'system', content: 'You are a Next.js page generator.' },
+                { role: 'user', content: 'Create a Next.js page called faq.js with an FAQ section.' }
+              ]
+            });
+
+            const content = response.choices[0].message.content;
+            fs.writeFileSync('pages/faq.js', content);
+          }
+
+          generatePage();
+          "
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add pages/faq.js
+          git commit -m "Auto Commit from Chat: Add faq.js"
           git push
