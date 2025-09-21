@@ -5,11 +5,12 @@ export default function Home() {
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
+      height: "100vh",
       flexDirection: "column",
-      minHeight: "100vh"
+      background: "#f5f5f5"
     }}>
       <h1>Hello, Hybrid WebApp 🚀</h1>
-      <p>Now powered by Next.js on Vercel 🎉</p>
+      <p>GitHub → Vercel 自動デプロイ成功！</p>
     </div>
-  )
+  );
 }
