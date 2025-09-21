@@ -1,23 +1,10 @@
-import Link from 'next/link';
+import Layout from "../components/Layout";
 
 export default function Home() {
   return (
-    <div style={{
-      fontFamily: "sans-serif",
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "center",
-      alignItems: "center",
-      height: "100vh",
-      background: "#f5f5f5"
-    }}>
+    <Layout>
       <h1>Hello, Hybrid WebApp 🚀</h1>
       <p>GitHub → Vercel 自動デプロイ成功！</p>
-
-      {/* ここにリンクを追加 */}
-      <p>
-        <Link href="/about">👉 Aboutページへ移動</Link>
-      </p>
-    </div>
+    </Layout>
   );
 }
