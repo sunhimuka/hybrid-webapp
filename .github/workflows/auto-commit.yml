@@ -3,6 +3,9 @@ name: Auto Commit from Chat
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write   # ← これが重要！
+
 jobs:
   commit:
     runs-on: ubuntu-latest
