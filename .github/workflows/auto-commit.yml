@@ -9,49 +9,27 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          persist-credentials: true
-          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: '18'
 
       - name: Install dependencies
-        run: |
-          npm install openai
+        run: npm install
 
-      - name: Generate new page with ChatGPT
+      - name: Run script with OpenAI API
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          node -e "
-          import fs from 'fs';
-          import OpenAI from 'openai';
+          echo "✅ OpenAI API Key is available (hidden)"
+          # 必要に応じて実行するスクリプトをここに書く
+          # 例: node scripts/generate.js
 
-          const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-          async function generatePage() {
-            const response = await client.chat.completions.create({
-              model: 'gpt-4o-mini',
-              messages: [
-                { role: 'system', content: 'You are a Next.js page generator.' },
-                { role: 'user', content: 'Create a Next.js page called faq.js with an FAQ section.' }
-              ]
-            });
-
-            const content = response.choices[0].message.content;
-            fs.writeFileSync('pages/faq.js', content);
-          }
-
-          generatePage();
-          "
-
-      - name: Commit and Push changes
+      - name: Commit changes
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add pages/faq.js
-          git commit -m "Auto Commit from Chat: Add faq.js"
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add .
+          git commit -m "Auto Commit from Chat" || echo "No changes to commit"
           git push
