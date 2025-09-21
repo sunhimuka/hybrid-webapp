@@ -19,7 +19,7 @@ jobs:
           export default function Contact() {
             return (
               <div style={{ padding: '2rem' }}>
-                <h1>Contact Page 📩</h1>
+                <h1>Contact Page</h1>
                 <p>This is a test page generated automatically!</p>
               </div>
             );
@@ -31,5 +31,9 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Auto Commit from Chat: Add contact.js" || echo "No changes to commit"
-          git push
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto Commit from Chat: Add contact.js"
+            git push
+          fi
