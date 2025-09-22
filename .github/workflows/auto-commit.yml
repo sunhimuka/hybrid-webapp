@@ -2,26 +2,35 @@ name: Auto Commit from Chat
 
 on:
   workflow_dispatch:
+    inputs:
+      message:
+        description: 'Commit message'
+        required: true
+        default: 'Auto Commit from Chat'
 
 jobs:
   commit:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Git
+      - name: Set Git config
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Make changes
         run: |
-          echo "Auto update at $(date)" >> update-log.txt
+          echo "Last updated on $(date)" >> auto-page.txt
 
-      - name: Commit and Push
+      - name: Commit changes
         run: |
           git add .
-          git commit -m "Auto update from Chat" || echo "No changes to commit"
+          git commit -m "${{ github.event.inputs.message }}" || echo "No changes to commit"
+
+      - name: Push changes
+        run: |
           git push
