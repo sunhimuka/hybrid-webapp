@@ -3,9 +3,10 @@ name: Auto Commit from Chat
 on:
   workflow_dispatch:
     inputs:
-      message:
-        description: "Commit message"
-        required: true
+      change_request:
+        description: "チャットからの要望（例: 'create page /faq', 'update /about title'）"
+        required: false
+        default: "minor housekeeping"
 
 permissions:
   contents: write
@@ -13,24 +14,99 @@ permissions:
 jobs:
   commit:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Git
+    steps:
+      # 1) リポジトリ取得
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      # 2) Git 署名設定（bot 名義で問題なし）
+      - name: Set up Git identity
         run: |
-          git config --global user.name "github-actions[bot]"
+          git config --global user.name  "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Make changes
+      # 3) 変更要望を環境変数に
+      - name: Read change request
+        id: req
         run: |
-          echo "<h1>New Page</h1><p>Generated automatically!</p>" > pages/auto-page.js
+          # 空なら既定文言
+          REQ="${{ github.event.inputs.change_request }}"
+          if [ -z "$REQ" ]; then REQ="minor housekeeping"; fi
+          echo "REQ=$REQ" >> $GITHUB_OUTPUT
 
-      - name: Commit and push changes
+      # 4) ざっくり自動実装（安全・決め打ちルール）
+      #    - "create page /xxx" → pages/xxx.js を作成
+      #    - それ以外は generated/CHANGELOG.md にログ
+      - name: Make changes based on request
         run: |
-          git add .
-          git commit -m "${{ github.event.inputs.message }}" || echo "No changes to commit"
-          git pull --rebase origin main
-          git push origin main
+          set -euo pipefail
+          REQ="${{ steps.req.outputs.REQ }}"
+
+          mkdir -p generated
+
+          # 要望をログに残す（常にやる）
+          TS="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "- [$TS] $REQ" >> generated/CHANGELOG.md
+
+          # “create page /slug” という指示なら Next.js のページを作成（既存なら上書きしない）
+          if echo "$REQ" | grep -qiE '^create page /[a-z0-9/_-]+$'; then
+            SLUG="$(echo "$REQ" | awk '{print $3}')"             # 例: /faq
+            FILE="pages$(echo "$SLUG" | sed 's#/$##').js"        # pages/faq.js
+            DIR="$(dirname "$FILE")"
+            mkdir -p "$DIR"
+            if [ ! -f "$FILE" ]; then
+              cat > "$FILE" <<'EOF'
+export default function AutoPage() {
+  return (
+    <main style={{ fontFamily: "system-ui, sans-serif", padding: "2rem" }}>
+      <h1>Auto Page</h1>
+      <p>This page was generated automatically by GitHub Actions.</p>
+    </main>
+  );
+}
+EOF
+              echo "Created: $FILE"
+            else
+              echo "Skip: $FILE already exists"
+            fi
+          fi
+
+      # 5) 変更がある時だけ commit / push
+      - name: Commit and push if changed
+        run: |
+          set -euo pipefail
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          # --- シンプル版の自動コミットメッセージ ---
+          # そのまま要望文を先頭に入れる
+          MSG="${{ steps.req.outputs.REQ }}"
+          git commit -m "Auto: ${MSG}"
+          git push
+
+  # ▼▼▼ 任意（Vercel をアクションから直接叩きたい場合のみ有効化） ▼▼▼
+  #    通常は 'git push' に伴って Vercel が自動デプロイするので不要です。
+  #    もし同一ワークフロー内でデプロイまで完結させたい場合は、
+  #    下の job をアンコメントし、リポジトリ・シークレットを 3 つ追加してください。
+  #    - VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+  #
+  # deploy:
+  #   needs: commit
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Deploy to Vercel (Production)
+  #       uses: amondnet/vercel-action@v25
+  #       with:
+  #         vercel-token: ${{ secrets.VERCEL_TOKEN }}
+  #         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+  #         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+  #         working-directory: ./
+  #         prod: true
