@@ -1,10 +1,10 @@
 name: Auto Commit from Chat
-
 on:
   workflow_dispatch:
-
-permissions:
-  contents: write
+    inputs:
+      prompt:
+        description: 'Change request from Chat'
+        required: true
 
 jobs:
   commit:
@@ -12,21 +12,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          persist-credentials: false
 
       - name: Set up Git
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "chat-bot"
+          git config --global user.email "chat-bot@users.noreply.github.com"
 
-      - name: Make changes
+      - name: Apply changes from ChatGPT
         run: |
-          echo "<h1>New Page</h1><p>This page was generated automatically!</p>" > pages/auto-page.js
+          echo "${{ github.event.inputs.prompt }}" > pages/auto-page.js
 
       - name: Commit and push changes
         run: |
           git add .
-          git commit -m "Auto Commit from Chat: Add auto-page.js" || echo "No changes to commit"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git push origin HEAD:${{ github.ref }}
+          git commit -m "Auto commit from Chat: ${{ github.event.inputs.prompt }}"
+          git push
