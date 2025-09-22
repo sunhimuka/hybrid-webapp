@@ -3,55 +3,28 @@ name: Auto Commit and Deploy
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write   # ← これが重要。botにpush権限を付与
+
 jobs:
   generate-and-commit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: 18
 
       - name: Install dependencies
         run: npm install
 
       - name: Generate Contact Page
         run: |
-          echo '<!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <title>Contact Page</title>
-          </head>
-          <body>
-            <h1>Contact Page 📞</h1>
-            <form method="POST" action="/api/contact">
-              <label>Name: <input type="text" name="name" required></label><br>
-              <label>Email: <input type="email" name="email" required></label><br>
-              <label>Message:<br><textarea name="message" required></textarea></label><br>
-              <button type="submit">Send</button>
-            </form>
-          </body>
-          </html>' > pages/contact.html
-
-      - name: Generate Contact API
-        run: |
-          mkdir -p pages/api
-          echo "export default function handler(req, res) {
-            if (req.method === 'POST') {
-              const { name, email, message } = req.body;
-              console.log('Contact Form Submission:', name, email, message);
-              res.status(200).json({ success: true });
-            } else {
-              res.status(405).json({ error: 'Method not allowed' });
-            }
-          }" > pages/api/contact.js
+          mkdir -p pages
+          echo "<h1>Contact Page</h1><p>This is auto-generated!</p>" > pages/contact.js
 
       - name: Ensure .gitignore excludes node_modules
         run: |
@@ -60,42 +33,41 @@ jobs:
 
       - name: Commit changes
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Auto-generate contact form and API" || echo "No changes to commit"
+          git commit -m "Auto-generate contact page" || echo "No changes to commit"
 
       - name: Push changes
-        uses: ad-m/github-push-action@v0.6.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+        run: git push origin main
 
   deploy:
     needs: generate-and-commit
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to Vercel
-        run: npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Trigger Vercel Deployment
+        run: |
+          curl -X POST https://api.vercel.com/v1/integrations/deploy/prj_${{ secrets.VERCEL_PROJECT_ID }} \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}"
 
   notify:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
       - name: Send notification email
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.GMAIL_USERNAME }}
-          password: ${{ secrets.GMAIL_APP_PASSWORD }}
-          subject: "Hybrid WebApp - GitHub Actions通知"
-          to: ${{ secrets.GMAIL_USERNAME }}
-          from: Hybrid WebApp Actions
-          body: |
-            ✅ Commit & Deploy 完了しました！
+        run: |
+          echo "Subject: ✅ Commit & Deploy 完了" > mail.txt
+          echo "GitHub Actionsからの通知です。" >> mail.txt
+          echo "✔️ Commit & Deploy が成功しました！" >> mail.txt
+          echo "" >> mail.txt
+          echo "- Repository: $GITHUB_REPOSITORY" >> mail.txt
+          echo "- Workflow: $GITHUB_WORKFLOW" >> mail.txt
+          echo "- Run ID: $GITHUB_RUN_ID" >> mail.txt
+          echo "- Status: success" >> mail.txt
 
-            - Repository: ${{ github.repository }}
-            - Workflow: ${{ github.workflow }}
-            - Run ID: ${{ github.run_id }}
-            - Status: success
+          curl -s --url 'smtps://smtp.gmail.com:465' \
+            --ssl-reqd \
+            --mail-from "${{ secrets.GMAIL_USERNAME }}" \
+            --mail-rcpt "sunhimuka1@gmail.com" \
+            --user "${{ secrets.GMAIL_USERNAME }}:${{ secrets.GMAIL_APP_PASSWORD }}" \
+            -T mail.txt
