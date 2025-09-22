@@ -7,27 +7,20 @@ jobs:
   commit:
     runs-on: ubuntu-latest
     steps:
-      # コードをチェックアウト
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Git のユーザー情報を設定（これがないと commit に失敗する）
       - name: Set up Git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      # （テスト用）ダミーのファイルを追加してみる
-      # 実際にはここを AI 生成のコード保存処理に置き換える
       - name: Make changes
         run: |
-          echo "// test file generated at $(date)" >> pages/test.js
+          echo "<h1>New Page 🚀</h1><p>This page was generated automatically!</p>" > pages/auto-page.js
 
-      # 変更を commit & push
-      - name: Commit and Push
+      - name: Commit and push changes
         run: |
           git add .
-          git commit -m "Auto Commit from Chat"
+          git commit -m "Auto Commit from Chat: Add auto-page.js"
           git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
