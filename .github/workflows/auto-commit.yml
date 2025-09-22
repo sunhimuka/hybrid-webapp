@@ -16,31 +16,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) リポジトリ取得
+      # 1. リポジトリをチェックアウト
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           persist-credentials: true
           fetch-depth: 0
 
-      # 2) Git 署名設定（bot 名義で問題なし）
-      - name: Set up Git identity
+      # 2. Git のユーザー情報をセットアップ（←ここが不足していた部分）
+      - name: Setup Git config
         run: |
           git config --global user.name  "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      # 3) 変更要望を環境変数に
+      # 3. 要望を環境変数に読み込む
       - name: Read change request
         id: req
         run: |
-          # 空なら既定文言
           REQ="${{ github.event.inputs.change_request }}"
           if [ -z "$REQ" ]; then REQ="minor housekeeping"; fi
           echo "REQ=$REQ" >> $GITHUB_OUTPUT
 
-      # 4) ざっくり自動実装（安全・決め打ちルール）
-      #    - "create page /xxx" → pages/xxx.js を作成
-      #    - それ以外は generated/CHANGELOG.md にログ
+      # 4. 要望を反映したファイル生成（安全運転設計）
       - name: Make changes based on request
         run: |
           set -euo pipefail
@@ -48,11 +45,11 @@ jobs:
 
           mkdir -p generated
 
-          # 要望をログに残す（常にやる）
+          # ログに記録
           TS="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
           echo "- [$TS] $REQ" >> generated/CHANGELOG.md
 
-          # “create page /slug” という指示なら Next.js のページを作成（既存なら上書きしない）
+          # “create page /slug” の指示なら Next.js のページ作成
           if echo "$REQ" | grep -qiE '^create page /[a-z0-9/_-]+$'; then
             SLUG="$(echo "$REQ" | awk '{print $3}')"             # 例: /faq
             FILE="pages$(echo "$SLUG" | sed 's#/$##').js"        # pages/faq.js
@@ -75,7 +72,7 @@ EOF
             fi
           fi
 
-      # 5) 変更がある時だけ commit / push
+      # 5. 変更をコミットして push
       - name: Commit and push if changed
         run: |
           set -euo pipefail
@@ -85,28 +82,6 @@ EOF
             exit 0
           fi
 
-          # --- シンプル版の自動コミットメッセージ ---
-          # そのまま要望文を先頭に入れる
           MSG="${{ steps.req.outputs.REQ }}"
           git commit -m "Auto: ${MSG}"
           git push
-
-  # ▼▼▼ 任意（Vercel をアクションから直接叩きたい場合のみ有効化） ▼▼▼
-  #    通常は 'git push' に伴って Vercel が自動デプロイするので不要です。
-  #    もし同一ワークフロー内でデプロイまで完結させたい場合は、
-  #    下の job をアンコメントし、リポジトリ・シークレットを 3 つ追加してください。
-  #    - VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
-  #
-  # deploy:
-  #   needs: commit
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Deploy to Vercel (Production)
-  #       uses: amondnet/vercel-action@v25
-  #       with:
-  #         vercel-token: ${{ secrets.VERCEL_TOKEN }}
-  #         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-  #         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-  #         working-directory: ./
-  #         prod: true
