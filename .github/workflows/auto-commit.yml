@@ -9,6 +9,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}  # ← 追加ポイント！
 
       - name: Set up Git
         run: |
@@ -17,12 +19,13 @@ jobs:
 
       - name: Make changes
         run: |
-          echo "<h1>New Page 📝</h1><p>This page was generated automatically!</p>" > pages/auto-page.js
+          echo "<h1>New Page 🚀</h1><p>This page was generated automatically!</p>" > pages/auto-page.js
 
-      - name: Commit and push changes
+      - name: Commit changes
         run: |
           git add .
           git commit -m "Auto Commit from Chat: Add auto-page.js" || echo "No changes to commit"
-          git push origin HEAD:${GITHUB_REF}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push changes
+        run: |
+          git push
