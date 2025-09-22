@@ -1,8 +1,9 @@
 name: Auto Commit from Chat
+
 on:
   workflow_dispatch:
     inputs:
-      prompt:
+      message:
         description: 'Change request from Chat'
         required: true
 
@@ -15,15 +16,15 @@ jobs:
 
       - name: Set up Git
         run: |
-          git config --global user.name "chat-bot"
-          git config --global user.email "chat-bot@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Apply changes from ChatGPT
+      - name: Make changes
         run: |
-          echo "${{ github.event.inputs.prompt }}" > pages/auto-page.js
+          echo "<h1>${{ github.event.inputs.message }}</h1>" > pages/auto-page.js
 
       - name: Commit and push changes
         run: |
           git add .
-          git commit -m "Auto commit from Chat: ${{ github.event.inputs.prompt }}"
+          git commit -m "Auto Commit from Chat: ${{ github.event.inputs.message }}"
           git push
