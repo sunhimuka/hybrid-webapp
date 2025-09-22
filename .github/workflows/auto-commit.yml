@@ -9,20 +9,20 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Git
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Make changes
         run: |
-          echo "<h1>New Page 🚀</h1><p>This page was generated automatically!</p>" > pages/auto-page.js
+          echo "<h1>New Page 📝</h1><p>This page was generated automatically!</p>" > pages/auto-page.js
 
       - name: Commit and push changes
         run: |
           git add .
           git commit -m "Auto Commit from Chat: Add auto-page.js" || echo "No changes to commit"
-          git push origin HEAD:${{ github.ref_name }}
+          git push origin HEAD:${GITHUB_REF}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
