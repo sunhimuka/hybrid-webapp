@@ -3,29 +3,69 @@ name: Auto Commit from Chat
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   commit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/checkout@v3
 
       - name: Configure Git
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Make changes
+      - name: Make a dummy change
         run: |
-          echo "Auto commit at $(date)" >> auto-commit-log.txt
+          echo "Auto update at $(date)" >> auto-update.log
+          git add auto-update.log
+          git commit -m "Auto Commit from Chat" || echo "No changes to commit"
 
-      - name: Commit and Push changes
+      - name: Push changes
         run: |
-          git add .
-          git commit -m "Auto Commit from Chat"
-          git push origin HEAD:main
+          git push origin main || echo "Nothing to push"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: commit
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Deploy to Vercel
+        run: |
+          npm install -g vercel
+          vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --yes
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [commit, deploy]
+    steps:
+      - name: Install msmtp
+        run: sudo apt-get install -y msmtp
+
+      - name: Send success email
+        if: success()
+        run: |
+          echo -e "Subject: ✅ デプロイ成功\n\nGitHub Actions によりデプロイが成功しました。\nVercel URL: https://your-vercel-app.vercel.app" \
+            | msmtp --host=${{ secrets.SMTP_SERVER }} \
+                    --port=${{ secrets.SMTP_PORT }} \
+                    --auth=on \
+                    --user=${{ secrets.SMTP_USERNAME }} \
+                    --passwordeval="echo ${{ secrets.SMTP_PASSWORD }}" \
+                    --tls=on \
+                    --tls-starttls=on \
+                    sunhimuka1@gmail.com
+
+      - name: Send failure email
+        if: failure()
+        run: |
+          echo -e "Subject: ❌ デプロイ失敗\n\nGitHub Actions でエラーが発生しました。ログを確認してください。" \
+            | msmtp --host=${{ secrets.SMTP_SERVER }} \
+                    --port=${{ secrets.SMTP_PORT }} \
+                    --auth=on \
+                    --user=${{ secrets.SMTP_USERNAME }} \
+                    --passwordeval="echo ${{ secrets.SMTP_PASSWORD }}" \
+                    --tls=on \
+                    --tls-starttls=on \
+                    sunhimuka1@gmail.com
