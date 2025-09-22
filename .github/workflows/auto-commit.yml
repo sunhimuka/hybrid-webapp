@@ -7,29 +7,27 @@ jobs:
   commit:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      # コードをチェックアウト
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run script with OpenAI API
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # Git のユーザー情報を設定（これがないと commit に失敗する）
+      - name: Set up Git
         run: |
-          echo "✅ OpenAI API Key is available (hidden)"
-          # 必要に応じて実行するスクリプトをここに書く
-          # 例: node scripts/generate.js
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Commit changes
+      # （テスト用）ダミーのファイルを追加してみる
+      # 実際にはここを AI 生成のコード保存処理に置き換える
+      - name: Make changes
         run: |
-          git config --local user.email "actions@github.com"
-          git config --local user.name "GitHub Actions"
+          echo "// test file generated at $(date)" >> pages/test.js
+
+      # 変更を commit & push
+      - name: Commit and Push
+        run: |
           git add .
-          git commit -m "Auto Commit from Chat" || echo "No changes to commit"
+          git commit -m "Auto Commit from Chat"
           git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
