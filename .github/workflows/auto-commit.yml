@@ -3,15 +3,14 @@ name: Auto Commit and Deploy
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   generate-and-commit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -23,15 +22,48 @@ jobs:
 
       - name: Generate Contact Page
         run: |
-          echo "<h1>Contact Page 📞</h1>" > pages/contact.js
-          echo "console.log('Contact Page generated');" >> pages/contact.js
+          echo '<!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>Contact Page</title>
+          </head>
+          <body>
+            <h1>Contact Page 📞</h1>
+            <form method="POST" action="/api/contact">
+              <label>Name: <input type="text" name="name" required></label><br>
+              <label>Email: <input type="email" name="email" required></label><br>
+              <label>Message:<br><textarea name="message" required></textarea></label><br>
+              <button type="submit">Send</button>
+            </form>
+          </body>
+          </html>' > pages/contact.html
+
+      - name: Generate Contact API
+        run: |
+          mkdir -p pages/api
+          echo "export default function handler(req, res) {
+            if (req.method === 'POST') {
+              const { name, email, message } = req.body;
+              console.log('Contact Form Submission:', name, email, message);
+              res.status(200).json({ success: true });
+            } else {
+              res.status(405).json({ error: 'Method not allowed' });
+            }
+          }" > pages/api/contact.js
+
+      - name: Ensure .gitignore excludes node_modules
+        run: |
+          echo "node_modules/" >> .gitignore
+          git rm -r --cached node_modules || true
 
       - name: Commit changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Auto-generate contact page" || echo "No changes to commit"
+          git commit -m "Auto-generate contact form and API" || echo "No changes to commit"
 
       - name: Push changes
         uses: ad-m/github-push-action@v0.6.0
@@ -44,8 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to Vercel
-        run: |
-          npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --confirm --scope=${{ secrets.VERCEL_ORG_ID }}
+        run: npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
 
   notify:
     needs: deploy
@@ -59,8 +90,8 @@ jobs:
           username: ${{ secrets.GMAIL_USERNAME }}
           password: ${{ secrets.GMAIL_APP_PASSWORD }}
           subject: "Hybrid WebApp - GitHub Actions通知"
-          to: sunhimuka1@gmail.com
-          from: GitHub Actions <${{ secrets.GMAIL_USERNAME }}>
+          to: ${{ secrets.GMAIL_USERNAME }}
+          from: Hybrid WebApp Actions
           body: |
             ✅ Commit & Deploy 完了しました！
 
