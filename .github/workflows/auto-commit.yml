@@ -2,86 +2,26 @@ name: Auto Commit from Chat
 
 on:
   workflow_dispatch:
-    inputs:
-      change_request:
-        description: "チャットからの要望（例: 'create page /faq', 'update /about title'）"
-        required: false
-        default: "minor housekeeping"
-
-permissions:
-  contents: write
 
 jobs:
   commit:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. リポジトリをチェックアウト
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
-      # 2. Git のユーザー情報をセットアップ（←ここが不足していた部分）
-      - name: Setup Git config
+      - name: Setup Git
         run: |
-          git config --global user.name  "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      # 3. 要望を環境変数に読み込む
-      - name: Read change request
-        id: req
+      - name: Make changes
         run: |
-          REQ="${{ github.event.inputs.change_request }}"
-          if [ -z "$REQ" ]; then REQ="minor housekeeping"; fi
-          echo "REQ=$REQ" >> $GITHUB_OUTPUT
+          echo "Auto update at $(date)" >> update-log.txt
 
-      # 4. 要望を反映したファイル生成（安全運転設計）
-      - name: Make changes based on request
+      - name: Commit and Push
         run: |
-          set -euo pipefail
-          REQ="${{ steps.req.outputs.REQ }}"
-
-          mkdir -p generated
-
-          # ログに記録
-          TS="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          echo "- [$TS] $REQ" >> generated/CHANGELOG.md
-
-          # “create page /slug” の指示なら Next.js のページ作成
-          if echo "$REQ" | grep -qiE '^create page /[a-z0-9/_-]+$'; then
-            SLUG="$(echo "$REQ" | awk '{print $3}')"             # 例: /faq
-            FILE="pages$(echo "$SLUG" | sed 's#/$##').js"        # pages/faq.js
-            DIR="$(dirname "$FILE")"
-            mkdir -p "$DIR"
-            if [ ! -f "$FILE" ]; then
-              cat > "$FILE" <<'EOF'
-export default function AutoPage() {
-  return (
-    <main style={{ fontFamily: "system-ui, sans-serif", padding: "2rem" }}>
-      <h1>Auto Page</h1>
-      <p>This page was generated automatically by GitHub Actions.</p>
-    </main>
-  );
-}
-EOF
-              echo "Created: $FILE"
-            else
-              echo "Skip: $FILE already exists"
-            fi
-          fi
-
-      # 5. 変更をコミットして push
-      - name: Commit and push if changed
-        run: |
-          set -euo pipefail
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-            exit 0
-          fi
-
-          MSG="${{ steps.req.outputs.REQ }}"
-          git commit -m "Auto: ${MSG}"
+          git add .
+          git commit -m "Auto update from Chat" || echo "No changes to commit"
           git push
