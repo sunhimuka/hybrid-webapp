@@ -3,160 +3,68 @@ name: Auto Commit and Deploy
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   generate-and-commit:
     runs-on: ubuntu-latest
     steps:
-      # 1. リポジトリを取得
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Node.js をセットアップ
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      # 3. 依存関係をインストール
       - name: Install dependencies
         run: npm install
 
-      # 4. Contact ページ (pages/contact.tsx) を自動生成
       - name: Generate Contact Page
         run: |
-          mkdir -p pages
-          cat > pages/contact.tsx << 'EOF'
-          import { useState } from "react";
+          echo "<h1>Contact Page 📞</h1>" > pages/contact.js
+          echo "console.log('Contact Page generated');" >> pages/contact.js
 
-          export default function Contact() {
-            const [formData, setFormData] = useState({ name: "", email: "", message: "" });
-            const [status, setStatus] = useState("");
-
-            const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-              setFormData({ ...formData, [e.target.name]: e.target.value });
-            };
-
-            const handleSubmit = async (e: React.FormEvent) => {
-              e.preventDefault();
-              setStatus("送信中...");
-              try {
-                const res = await fetch("/api/contact", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(formData),
-                });
-                if (res.ok) {
-                  setStatus("送信完了しました！");
-                } else {
-                  setStatus("送信に失敗しました。");
-                }
-              } catch (err) {
-                setStatus("エラーが発生しました。");
-              }
-            };
-
-            return (
-              <div style={{ padding: "20px" }}>
-                <h1>Contact Page</h1>
-                <form onSubmit={handleSubmit}>
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Your Name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                  />
-                  <br />
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="Your Email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
-                  <br />
-                  <textarea
-                    name="message"
-                    placeholder="Your Message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    required
-                  />
-                  <br />
-                  <button type="submit">送信</button>
-                </form>
-                <p>{status}</p>
-              </div>
-            );
-          }
-          EOF
-
-      # 5. API エンドポイント (pages/api/contact.ts) を自動生成
-      - name: Generate Contact API
-        run: |
-          mkdir -p pages/api
-          cat > pages/api/contact.ts << 'EOF'
-          import type { NextApiRequest, NextApiResponse } from "next";
-          import nodemailer from "nodemailer";
-
-          export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-            if (req.method !== "POST") {
-              return res.status(405).json({ error: "Method not allowed" });
-            }
-
-            const { name, email, message } = req.body;
-
-            if (!name || !email || !message) {
-              return res.status(400).json({ error: "Missing required fields" });
-            }
-
-            try {
-              const transporter = nodemailer.createTransport({
-                service: "gmail",
-                auth: {
-                  user: process.env.GMAIL_USER,
-                  pass: process.env.GMAIL_APP_PASSWORD,
-                },
-              });
-
-              await transporter.sendMail({
-                from: process.env.GMAIL_USER,
-                to: process.env.GMAIL_USER,
-                subject: "新しいお問い合わせ",
-                text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
-              });
-
-              return res.status(200).json({ success: true });
-            } catch (error) {
-              console.error("Email sending failed:", error);
-              return res.status(500).json({ error: "Failed to send email" });
-            }
-          }
-          EOF
-
-      # 6. 生成ファイルをコミット
       - name: Commit changes
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
-          git add pages/contact.tsx pages/api/contact.ts
-          git commit -m "Add contact form with Gmail integration" || echo "No changes to commit"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Auto-generate contact page" || echo "No changes to commit"
 
-      # 7. Push
       - name: Push changes
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
 
-  # Vercel デプロイ
   deploy:
     needs: generate-and-commit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
       - name: Deploy to Vercel
         run: |
-          npm install -g vercel
-          vercel --token=${{ secrets.VERCEL_TOKEN }} --prod --yes --confirm
+          npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --confirm --scope=${{ secrets.VERCEL_ORG_ID }}
+
+  notify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: "Hybrid WebApp - GitHub Actions通知"
+          to: sunhimuka1@gmail.com
+          from: GitHub Actions <${{ secrets.GMAIL_USERNAME }}>
+          body: |
+            ✅ Commit & Deploy 完了しました！
+
+            - Repository: ${{ github.repository }}
+            - Workflow: ${{ github.workflow }}
+            - Run ID: ${{ github.run_id }}
+            - Status: success
